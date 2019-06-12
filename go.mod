@@ -2,6 +2,8 @@ module github.com/sky-uk/terraform-provider-nsx
 
 go 1.12
 
+replace github.com/sky-uk/gonsx => github.com/ArthurHlt/gonsx v0.0.0-fix-proxy
+
 require (
 	github.com/apparentlymart/go-cidr v1.0.0
 	github.com/armon/go-radix v1.0.0
