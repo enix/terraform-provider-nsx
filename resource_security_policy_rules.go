@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/sky-uk/gonsx"
@@ -11,6 +12,7 @@ import (
 func resourceSecurityPolicyRule() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceSecurityPolicyRuleCreate,
+		Update: resourceSecurityPolicyRuleUpdate,
 		Read:   resourceSecurityPolicyRuleRead,
 		Delete: resourceSecurityPolicyRuleDelete,
 
@@ -19,30 +21,25 @@ func resourceSecurityPolicyRule() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 
 			"securitypolicyname": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 
 			"action": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 
 			"direction": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 
 			"securitygroupids": {
 				Type:     schema.TypeList,
-				ForceNew: true,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -50,8 +47,18 @@ func resourceSecurityPolicyRule() *schema.Resource {
 			"serviceids": {
 				Type:     schema.TypeList,
 				Required: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+
+			"securitygroupbindingids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+
+			"revision": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 		},
 	}
@@ -128,14 +135,16 @@ func resourceSecurityPolicyRuleCreate(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	existingAction := policyToModify.GetFirewallRuleByName(name)
-	if existingAction.Name != "" {
-		return fmt.Errorf("Firewall rule with same name already exists in this security policy")
+	if d.IsNewResource() {
+		existingAction := policyToModify.GetFirewallRuleByName(name)
+		if existingAction.Name != "" {
+			return fmt.Errorf("Firewall rule with same name already exists in this security policy")
+		}
 	}
 
 	if direction == "inbound" {
 		log.Printf(fmt.Sprintf("[DEBUG] policyToModify.AddInboundFirewallAction(%s, %s, %s, %s)", name, action, direction, serviceids))
-		err = policyToModify.AddInboundFirewallAction(name, action, direction, serviceids)
+		err = policyToModify.AddInboundFirewallAction(name, action, direction, securitygroupids, serviceids)
 		if err != nil {
 			return fmt.Errorf("Error in adding the rule to policy object: %s", err)
 		}
@@ -147,22 +156,48 @@ func resourceSecurityPolicyRuleCreate(d *schema.ResourceData, m interface{}) err
 		}
 	}
 
+	if v, ok := d.GetOk("securitygroupbindingids"); ok {
+		list := v.([]interface{})
+		bindings := make([]securitypolicy.SecurityGroup, len(list))
+		for i, value := range list {
+			secGroupId := value.(string)
+			bindings[i] = securitypolicy.SecurityGroup{
+				ObjectID: secGroupId,
+			}
+		}
+		policyToModify.SecurityGroupBinding = bindings
+	}
+	if !d.IsNewResource() {
+		actionsByCategory := policyToModify.ActionsByCategory
+		actions := policyToModify.ActionsByCategory.Actions
+		actions[0].ObjectID = d.Id()
+		actionsByCategory.Actions = actions
+		policyToModify.ActionsByCategory = actionsByCategory
+	}
 	log.Printf("[DEBUG] - policyTOModify :%s", policyToModify)
 	policyToModify.Revision += policyToModify.Revision
 	updateAPI := securitypolicy.NewUpdate(policyToModify.ObjectID, policyToModify)
 
 	err = nsxclient.Do(updateAPI)
-
 	if err != nil {
 		return fmt.Errorf("Error creating security group: %v", err)
 	}
-
+	var policy securitypolicy.SecurityPolicy
+	err = xml.Unmarshal(updateAPI.RawResponse(), &policy)
+	if err != nil {
+		return fmt.Errorf("Error creating security group: %v", err)
+	}
+	actionId := policy.ActionsByCategory.Actions[0].ObjectID
 	if updateAPI.StatusCode() != 200 {
 		return fmt.Errorf("%s", updateAPI.ResponseObject())
 	}
-
-	d.SetId(name)
+	d.Set("revision", policyToModify.Revision)
+	d.SetId(actionId)
 	return resourceSecurityPolicyRuleRead(d, m)
+}
+
+func resourceSecurityPolicyRuleUpdate(d *schema.ResourceData, m interface{}) error {
+	return resourceSecurityPolicyRuleCreate(d, m)
 }
 
 func resourceSecurityPolicyRuleRead(d *schema.ResourceData, m interface{}) error {
@@ -196,6 +231,35 @@ func resourceSecurityPolicyRuleRead(d *schema.ResourceData, m interface{}) error
 	if id == "" {
 		d.SetId("")
 	}
+
+	bindingIds := make([]string, 0)
+	for _, binding := range policyToRead.SecurityGroupBinding {
+		bindingIds = append(bindingIds, binding.ObjectID)
+	}
+	d.Set("securitygroupbindingids", bindingIds)
+	d.Set("revision", policyToRead.Revision)
+
+	if len(policyToRead.ActionsByCategory.Actions) == 0 {
+		return nil
+	}
+	action := policyToRead.ActionsByCategory.Actions[0]
+	d.Set("action", action.Action)
+	d.Set("direction", action.Direction)
+
+	secGroupIds := make([]string, 0)
+	for _, secGroup := range action.SecondarySecurityGroup {
+		secGroupIds = append(secGroupIds, secGroup.ObjectID)
+	}
+	d.Set("securitygroupids", secGroupIds)
+
+	serviceIds := make([]string, 0)
+	if action.Applications != nil {
+		for _, application := range action.Applications.Applications {
+			serviceIds = append(serviceIds, application.ObjectID)
+		}
+	}
+	d.Set("serviceids", serviceIds)
+
 	return nil
 }
 

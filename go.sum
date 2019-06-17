@@ -11,6 +11,10 @@ dmitri.shuralyov.com/state v0.0.0-20180228185332-28bcc343414c/go.mod h1:0PRwlb0D
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 github.com/ArthurHlt/gonsx v0.0.0-fix-proxy h1:xFjO3KOSnqeB3GGmcmCJsV0p681IVX6kDozSabxw+As=
 github.com/ArthurHlt/gonsx v0.0.0-fix-proxy/go.mod h1:67OkTkXtXC50mtTtEfL1cw4k8Xo2M/gIanbmV5sDixI=
+github.com/ArthurHlt/gonsx v0.0.0-orange h1:E+L9UK/thWOc+3IICrie6tPg1/q8oZecbg/gUDRrwbA=
+github.com/ArthurHlt/gonsx v0.0.0-orange/go.mod h1:67OkTkXtXC50mtTtEfL1cw4k8Xo2M/gIanbmV5sDixI=
+github.com/ArthurHlt/gonsx v0.0.1-orange h1:kqOZOWYcz0d2q7qNLbyLMnKHa0e+QBg4LLhYOoOpApk=
+github.com/ArthurHlt/gonsx v0.0.1-orange/go.mod h1:67OkTkXtXC50mtTtEfL1cw4k8Xo2M/gIanbmV5sDixI=
 github.com/Azure/azure-sdk-for-go v10.3.0-beta+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/azure-sdk-for-go v21.3.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/go-autorest v9.10.0+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=

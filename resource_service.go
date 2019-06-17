@@ -164,58 +164,13 @@ func resourceServiceRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceServiceDelete(d *schema.ResourceData, meta interface{}) error {
 	nsxclient := meta.(*gonsx.NSXClient)
-	var name, scopeid string
-
-	// Gather the attributes for the resource.
-	if v, ok := d.GetOk("scopeid"); ok {
-		scopeid = v.(string)
-	} else {
-		return fmt.Errorf("scopeid argument is required")
-	}
-
-	if v, ok := d.GetOk("name"); ok {
-		name = v.(string)
-	} else {
-		return fmt.Errorf("name argument is required")
-	}
-
-	// Gather all the resources that are associated with the specified
-	// scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] service.NewGetAll(%s)", scopeid))
-	api := service.NewGetAll(scopeid)
-	err := nsxclient.Do(api)
+	deleteAPI := service.NewDelete(d.Id())
+	err := nsxclient.Do(deleteAPI)
 
 	if err != nil {
 		return err
 	}
-
-	// See if we can find our specifically named resource within the list of
-	// resources associated with the scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name))
-	serviceObject, err := getSingleService(scopeid, name, nsxclient)
-	id := serviceObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
-
-	// If the resource has been removed manually, notify Terraform of this fact.
-	if id == "" {
-		d.SetId("")
-		return nil
-	}
-
-	// If we got here, the resource exists, so we attempt to delete it.
-	deleteAPI := service.NewDelete(id)
-	err = nsxclient.Do(deleteAPI)
-
-	if err != nil {
-		return err
-	}
-
-	// If we got here, the resource had existed, we deleted it and there was
-	// no error.  Notify Terraform of this fact and return successful
-	// completion.
-	d.SetId("")
-	log.Printf(fmt.Sprintf("[DEBUG] id %s deleted.", id))
-
+	log.Printf(fmt.Sprintf("[DEBUG] id %s deleted.", d.Id()))
 	return nil
 }
 
