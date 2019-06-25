@@ -60,7 +60,7 @@ func resourceService() *schema.Resource {
 
 			"ports": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 		},
 	}
@@ -94,12 +94,7 @@ func resourceServiceCreate(d *schema.ResourceData, meta interface{}) error {
 	} else {
 		return fmt.Errorf("protocol argument is required")
 	}
-
-	if v, ok := d.GetOk("ports"); ok {
-		ports = v.(string)
-	} else {
-		return fmt.Errorf("ports argument is required")
-	}
+	ports = d.Get("ports").(string)
 
 	// Create the API, use it and check for errors.
 	log.Printf(fmt.Sprintf("[DEBUG] service.NewCreate(%s, %s, %s, %s, %s)", scopeid, name, description, protocol, ports))

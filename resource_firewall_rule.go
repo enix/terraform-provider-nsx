@@ -42,7 +42,7 @@ func resourceFirewallRule() *schema.Resource {
 				Default:  "allow",
 				ValidateFunc: validation.StringInSlice([]string{
 					"allow",
-					"block",
+					"deny",
 					"reject",
 				}, true),
 			},
@@ -311,6 +311,12 @@ func resourceFirewallRuleCreate(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return err
 	}
+
+	err = checkerr(fRuleCreate)
+	if err != nil {
+		return err
+	}
+
 	d.SetId(fmt.Sprintf("%d", fRuleCreate.GetResponse().ID))
 	return nil
 }
@@ -358,12 +364,19 @@ func resourceFirewallRuleUpdate(d *schema.ResourceData, meta interface{}) error 
 func resourceFirewallRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	nsxclient := meta.(*gonsx.NSXClient)
 
+	fConfig := firewall.NewGetFirewallConfig()
+	err := nsxclient.Do(fConfig)
+	if err != nil {
+		return err
+	}
+	etag := fConfig.ResponseHeaders().Get("Etag")
+
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return err
 	}
 
-	fRuleDelete := firewall.NewDeleteRule(d.Get("sectionid").(int), d.Get("etag").(string), id)
+	fRuleDelete := firewall.NewDeleteRule(d.Get("sectionid").(int), etag, id)
 	err = nsxclient.Do(fRuleDelete)
 	if err != nil {
 		return err

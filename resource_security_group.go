@@ -35,12 +35,21 @@ func resourceSecurityGroup() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"scopeid": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Default:  "globalroot-0",
 				ForceNew: true,
 			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"existing": &schema.Schema{
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"no_delete": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"dynamic_membership": &schema.Schema{
 				Type:     schema.TypeList,
@@ -84,6 +93,21 @@ func resourceSecurityGroup() *schema.Resource {
 			},
 		},
 	}
+}
+
+func findSecurityGroup(name, scopeid string, nsxclient *gonsx.NSXClient) (securitygroup.SecurityGroup, error) {
+	getAllAPI := securitygroup.NewGetAll(scopeid)
+
+	err := nsxclient.Do(getAllAPI)
+	if err != nil {
+		return securitygroup.SecurityGroup{}, err
+	}
+	for _, secGroup := range getAllAPI.GetResponse().SecurityGroups {
+		if secGroup.Name == name {
+			return secGroup, nil
+		}
+	}
+	return securitygroup.SecurityGroup{}, nil
 }
 
 func validateSecurityGroupSetOperator(v interface{}, k string) (ws []string, errors []error) {
@@ -194,6 +218,20 @@ func resourceSecurityGroupCreate(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 		// dynamicMemberDefinition, err = getDynamicMemberDefinitionFromTemplate(v)
+	}
+
+	secGroupExists, err := findSecurityGroup(name, scopeid, nsxclient)
+	if err != nil {
+		return err
+	}
+
+	if secGroupExists.ObjectID != "" {
+		d.SetId(secGroupExists.ObjectID)
+		d.Set("existing", true)
+		if _, ok := d.GetOk("dynamic_membership"); ok {
+			return resourceSecurityGroupUpdate(d, m)
+		}
+		return nil
 	}
 
 	log.Printf(fmt.Sprintf("[DEBUG] securitygroup.NewCreate(%s, %s, %v", scopeid, name, &dynamicMemberDefinition))
@@ -333,6 +371,9 @@ func resourceSecurityGroupUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceSecurityGroupDelete(d *schema.ResourceData, m interface{}) error {
 	nsxclient := m.(*gonsx.NSXClient)
+	if d.Get("existing").(bool) || d.Get("no_delete").(bool) {
+		return nil
+	}
 	var name, scopeid string
 
 	// Gather the attributes for the resource.
