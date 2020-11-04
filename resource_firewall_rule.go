@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/firewall"
-	"strconv"
 )
 
 func resourceFirewallRule() *schema.Resource {
@@ -302,11 +304,11 @@ func resourceFirewallRuleCreate(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return err
 	}
-	d.Set("etag", fConfig.ResponseHeaders().Get("Etag"))
+	d.Set("etag", cleanEtag(fConfig.ResponseHeaders().Get("Etag")))
 
 	rule := tfRuleToFirewallRule(d)
 
-	fRuleCreate := firewall.NewCreateRule(rule.SectionId, d.Get("etag").(string), &rule)
+	fRuleCreate := firewall.NewCreateRule(rule.SectionId, cleanEtag(d.Get("etag").(string)), &rule)
 	err = nsxclient.Do(fRuleCreate)
 	if err != nil {
 		return err
@@ -329,12 +331,12 @@ func resourceFirewallRuleRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-	d.Set("etag", fConfig.ResponseHeaders().Get("Etag"))
+	d.Set("etag", cleanEtag(fConfig.ResponseHeaders().Get("Etag")))
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return err
 	}
-	fRuleRead := firewall.NewGetRule(d.Get("sectionid").(int), d.Get("etag").(string), id)
+	fRuleRead := firewall.NewGetRule(d.Get("sectionid").(int), cleanEtag(d.Get("etag").(string)), id)
 
 	err = nsxclient.Do(fRuleRead)
 	if err != nil {
@@ -353,7 +355,7 @@ func resourceFirewallRuleUpdate(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	rule := tfRuleToFirewallRule(d)
-	fRuleUpdate := firewall.NewUpdateRule(rule.SectionId, d.Get("etag").(string), id, rule)
+	fRuleUpdate := firewall.NewUpdateRule(rule.SectionId, cleanEtag(d.Get("etag").(string)), id, rule)
 	err = nsxclient.Do(fRuleUpdate)
 	if err != nil {
 		return err
@@ -369,7 +371,7 @@ func resourceFirewallRuleDelete(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return err
 	}
-	etag := fConfig.ResponseHeaders().Get("Etag")
+	etag := cleanEtag(fConfig.ResponseHeaders().Get("Etag"))
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -382,4 +384,10 @@ func resourceFirewallRuleDelete(d *schema.ResourceData, meta interface{}) error 
 		return err
 	}
 	return nil
+}
+
+func cleanEtag(etag string) string {
+	etag = strings.TrimPrefix(etag, "\"")
+	etag = strings.TrimSuffix(etag, "\"")
+	return etag
 }
