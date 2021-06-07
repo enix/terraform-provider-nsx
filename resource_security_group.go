@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/securitygroup"
 	"log"
@@ -172,7 +172,7 @@ func buildDynamicMemberDefinition(m interface{}) (*securitygroup.DynamicMemberDe
 		}
 		dynamicSetList[index].Operator = data["set_operator"].(string)
 		dynamicSetList[index].DynamicCriteria = dynamicRulesList
-		log.Printf(fmt.Sprintf("[DEBUG] DynamicSetList: %v", dynamicSetList))
+		log.Printf("[DEBUG] DynamicSetList: %v", dynamicSetList)
 
 	}
 	newDynamicMemberDefinition.DynamicSet = dynamicSetList
@@ -212,7 +212,7 @@ func resourceSecurityGroupCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if v, ok := d.GetOk("dynamic_membership"); ok {
-		log.Printf(fmt.Sprintf("[DEBUG] dynamic_membership create : %+v", v))
+		log.Printf("[DEBUG] dynamic_membership create : %+v", v)
 		dynamicMemberDefinition, err = buildDynamicMemberDefinition(v)
 		if err != nil {
 			return err
@@ -234,7 +234,7 @@ func resourceSecurityGroupCreate(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	log.Printf(fmt.Sprintf("[DEBUG] securitygroup.NewCreate(%s, %s, %v", scopeid, name, &dynamicMemberDefinition))
+	log.Printf("[DEBUG] securitygroup.NewCreate(%s, %s, %v", scopeid, name, &dynamicMemberDefinition)
 	createAPI := securitygroup.NewCreate(scopeid, name, dynamicMemberDefinition)
 	err = nsxclient.Do(createAPI)
 
@@ -281,14 +281,14 @@ func resourceSecurityGroupRead(d *schema.ResourceData, m interface{}) error {
 
 	// See if we can find our specifically named resource within the list of
 	// resources associated with the scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name))
+	log.Printf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name)
 	securityGroupObject, err := getSingleSecurityGroup(scopeid, name, nsxclient)
 	if err != nil {
 		return err
 	}
 
 	id := securityGroupObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
@@ -299,7 +299,7 @@ func resourceSecurityGroupRead(d *schema.ResourceData, m interface{}) error {
 	if securityGroupObject.DynamicMemberDefinition == nil {
 		return nil
 	}
-	log.Printf(fmt.Sprintf("[DEBUG] dynamicMembership := %v", securityGroupObject.DynamicMemberDefinition))
+	log.Printf("[DEBUG] dynamicMembership := %v", securityGroupObject.DynamicMemberDefinition)
 	for idx, remoteDynamicSet := range securityGroupObject.DynamicMemberDefinition.DynamicSet {
 		dynamicMembership.DynamicSet[idx].Operator = remoteDynamicSet.Operator
 		readDynamicCriteria(dynamicMembership.DynamicSet[idx].DynamicCriteria,
@@ -336,16 +336,16 @@ func resourceSecurityGroupUpdate(d *schema.ResourceData, m interface{}) error {
 		return errors.New("scopeid argument is required")
 	}
 
-	log.Printf(fmt.Sprintf("[DEBUG] securitygroup.NewGetAll(%s)", scopeid))
+	log.Printf("[DEBUG] securitygroup.NewGetAll(%s)", scopeid)
 	oldName, newName := d.GetChange("name")
-	securityGroupObject, err := getSingleSecurityGroup(scopeid, oldName.(string), nsxclient)
+	securityGroupObject, err := getSingleSecurityGroup(scopeid, oldName.(string), nsxclient) //nolint, maybe a reason to not trigger error
 	id := securityGroupObject.ObjectID
 
 	// TODO: change attributes other than name. Requires changes in gonsx.
 	if d.HasChange("name") {
 		hasChanges = true
 		securityGroupObject.Name = newName.(string)
-		log.Printf(fmt.Sprintf("[DEBUG] Changing name of security group from %s to %s", oldName.(string), newName.(string)))
+		log.Printf("[DEBUG] Changing name of security group from %s to %s", oldName.(string), newName.(string))
 	}
 
 	if d.HasChange("dynamic_membership") {
@@ -363,7 +363,7 @@ func resourceSecurityGroupUpdate(d *schema.ResourceData, m interface{}) error {
 		updateAPI := securitygroup.NewUpdate(id, securityGroupObject)
 		err = nsxclient.Do(updateAPI)
 		if err != nil {
-			log.Printf(fmt.Sprintf("[DEBUG] Error updating security group: %s", err))
+			log.Printf("[DEBUG] Error updating security group: %s", err)
 		}
 	}
 	return resourceSecurityGroupRead(d, m)
@@ -391,7 +391,7 @@ func resourceSecurityGroupDelete(d *schema.ResourceData, m interface{}) error {
 
 	// Gather all the resources that are associated with the specified
 	// scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] securitygroup.NewGetAll(%s)", scopeid))
+	log.Printf("[DEBUG] securitygroup.NewGetAll(%s)", scopeid)
 	api := securitygroup.NewGetAll(scopeid)
 	err := nsxclient.Do(api)
 
@@ -401,10 +401,10 @@ func resourceSecurityGroupDelete(d *schema.ResourceData, m interface{}) error {
 
 	// See if we can find our specifically named resource within the list of
 	// resources associated with the scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name))
-	securityGroupObject, err := getSingleSecurityGroup(scopeid, name, nsxclient)
+	log.Printf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name)
+	securityGroupObject, err := getSingleSecurityGroup(scopeid, name, nsxclient) //nolint, maybe a reason to not trigger error
 	id := securityGroupObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
@@ -424,7 +424,7 @@ func resourceSecurityGroupDelete(d *schema.ResourceData, m interface{}) error {
 	// no error.  Notify Terraform of this fact and return successful
 	// completion.
 	d.SetId("")
-	log.Printf(fmt.Sprintf("[DEBUG] id %s deleted.", id))
+	log.Printf("[DEBUG] id %s deleted.", id)
 
 	return nil
 }

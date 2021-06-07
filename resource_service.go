@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/service"
 	"log"
@@ -97,7 +97,7 @@ func resourceServiceCreate(d *schema.ResourceData, meta interface{}) error {
 	ports = d.Get("ports").(string)
 
 	// Create the API, use it and check for errors.
-	log.Printf(fmt.Sprintf("[DEBUG] service.NewCreate(%s, %s, %s, %s, %s)", scopeid, name, description, protocol, ports))
+	log.Printf("[DEBUG] service.NewCreate(%s, %s, %s, %s, %s)", scopeid, name, description, protocol, ports)
 	createAPI := service.NewCreate(scopeid, name, description, protocol, ports)
 	err := nsxclient.Do(createAPI)
 
@@ -134,7 +134,7 @@ func resourceServiceRead(d *schema.ResourceData, meta interface{}) error {
 
 	// Gather all the resources that are associated with the specified
 	// scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] service.NewGetAll(%s)", scopeid))
+	log.Printf("[DEBUG] service.NewGetAll(%s)", scopeid)
 	api := service.NewGetAll(scopeid)
 	err := nsxclient.Do(api)
 
@@ -144,10 +144,10 @@ func resourceServiceRead(d *schema.ResourceData, meta interface{}) error {
 
 	// See if we can find our specifically named resource within the list of
 	// resources associated with the scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name))
-	serviceObject, err := getSingleService(scopeid, name, nsxclient)
+	log.Printf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name)
+	serviceObject, err := getSingleService(scopeid, name, nsxclient) //nolint, maybe a reason to not trigger error
 	id := serviceObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
@@ -165,7 +165,7 @@ func resourceServiceDelete(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-	log.Printf(fmt.Sprintf("[DEBUG] id %s deleted.", d.Id()))
+	log.Printf("[DEBUG] id %s deleted.", d.Id())
 	return nil
 }
 
@@ -182,39 +182,39 @@ func resourceServiceUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	// Do a GetAll on service resources that are associated with the specified scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] service.NewGetAll(%s)", scopeid))
+	log.Printf("[DEBUG] service.NewGetAll(%s)", scopeid)
 	api := service.NewGetAll(scopeid)
 	err := nsxclient.Do(api)
 	if err != nil {
-		log.Printf(fmt.Sprintf("[DEBUG] Error during getting all service resources: %s", err))
+		log.Printf("[DEBUG] Error during getting all service resources: %s", err)
 		return err
 	}
 
 	// Find the resource with current name within all the scopeid resources.
 	oldName, newName := d.GetChange("name")
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", oldName.(string)))
-	serviceObject, err := getSingleService(scopeid, oldName.(string), nsxclient)
+	log.Printf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", oldName.(string))
+	serviceObject, err := getSingleService(scopeid, oldName.(string), nsxclient) //nolint, maybe a reason to not trigger error
 	id := serviceObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
 		d.SetId("")
-		log.Printf(fmt.Sprintf("[DEBUG] Could not find the service resource with %s name, state will be cleared", oldName))
+		log.Printf("[DEBUG] Could not find the service resource with %s name, state will be cleared", oldName)
 		return nil
 	}
 
 	if d.HasChange("name") {
 		hasChanges = true
 		serviceObject.Name = newName.(string)
-		log.Printf(fmt.Sprintf("[DEBUG] Changing name of service from %s to %s", oldName.(string), newName.(string)))
+		log.Printf("[DEBUG] Changing name of service from %s to %s", oldName.(string), newName.(string))
 	}
 
 	if d.HasChange("description") {
 		hasChanges = true
 		oldDesc, newDesc := d.GetChange("description")
 		serviceObject.Description = newDesc.(string)
-		log.Printf(fmt.Sprintf("[DEBUG] Changing description of service from %s to %s", oldDesc.(string), newDesc.(string)))
+		log.Printf("[DEBUG] Changing description of service from %s to %s", oldDesc.(string), newDesc.(string))
 	}
 
 	if d.HasChange("protocol") || d.HasChange("ports") {
@@ -223,8 +223,8 @@ func resourceServiceUpdate(d *schema.ResourceData, meta interface{}) error {
 		oldPorts, newPorts := d.GetChange("ports")
 		newElement := service.Element{ApplicationProtocol: newProtocol.(string), Value: newPorts.(string)}
 		serviceObject.Element = []service.Element{newElement}
-		log.Printf(fmt.Sprintf("[DEBUG] Changing protocol and/or ports of service from %s:%s to %s:%s",
-			oldProtocol.(string), oldPorts.(string), newProtocol.(string), newPorts.(string)))
+		log.Printf("[DEBUG] Changing protocol and/or ports of service from %s:%s to %s:%s",
+			oldProtocol.(string), oldPorts.(string), newProtocol.(string), newPorts.(string))
 	}
 
 	if hasChanges {
@@ -232,7 +232,7 @@ func resourceServiceUpdate(d *schema.ResourceData, meta interface{}) error {
 		err = nsxclient.Do(updateAPI)
 
 		if err != nil {
-			log.Printf(fmt.Sprintf("[DEBUG] Error updating service resource: %s", err))
+			log.Printf("[DEBUG] Error updating service resource: %s", err)
 			return err
 		}
 	}

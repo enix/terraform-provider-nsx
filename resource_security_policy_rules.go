@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/securitypolicy"
 	"log"
@@ -143,13 +143,13 @@ func resourceSecurityPolicyRuleCreate(d *schema.ResourceData, m interface{}) err
 	}
 
 	if direction == "inbound" {
-		log.Printf(fmt.Sprintf("[DEBUG] policyToModify.AddInboundFirewallAction(%s, %s, %s, %s)", name, action, direction, serviceids))
+		log.Printf("[DEBUG] policyToModify.AddInboundFirewallAction(%s, %s, %s, %s)", name, action, direction, serviceids)
 		err = policyToModify.AddInboundFirewallAction(name, action, direction, securitygroupids, serviceids)
 		if err != nil {
 			return fmt.Errorf("Error in adding the rule to policy object: %s", err)
 		}
 	} else {
-		log.Printf(fmt.Sprintf("[DEBUG] policyToModify.AddOutboundFirewallAction(%s, %s, %s, %s, %s)", name, action, direction, securitygroupids, serviceids))
+		log.Printf("[DEBUG] policyToModify.AddOutboundFirewallAction(%s, %s, %s, %s, %s)", name, action, direction, securitygroupids, serviceids)
 		err = policyToModify.AddOutboundFirewallAction(name, action, direction, securitygroupids, serviceids)
 		if err != nil {
 			return fmt.Errorf("Error in adding the rule to policy object: %s", err)
@@ -225,7 +225,7 @@ func resourceSecurityPolicyRuleRead(d *schema.ResourceData, m interface{}) error
 
 	existingAction := policyToRead.GetFirewallRuleByName(name)
 	id := existingAction.VsmUUID
-	log.Printf(fmt.Sprintf("[DEBUG] VsmUUID := %s", id))
+	log.Printf("[DEBUG] VsmUUID := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
@@ -288,7 +288,7 @@ func resourceSecurityPolicyRuleDelete(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	log.Printf(fmt.Sprintf("[DEBUG] policyToModify.Remove(%s)", name))
+	log.Printf("[DEBUG] policyToModify.Remove(%s)", name)
 	// FIXME:  RemoveFirewallActionByName probably return a error for consistency
 	policyToModify.RemoveFirewallActionByName(name)
 	log.Printf("[DEBUG] - policyTOModify :%s", policyToModify)
@@ -308,7 +308,7 @@ func resourceSecurityPolicyRuleDelete(d *schema.ResourceData, m interface{}) err
 	// no error.  Notify Terraform of this fact and return successful
 	// completion.
 	d.SetId("")
-	log.Printf(fmt.Sprintf("[DEBUG] firewall rule with name %s from securitypolicy %s deleted.", name, securityPolicyName))
+	log.Printf("[DEBUG] firewall rule with name %s from securitypolicy %s deleted.", name, securityPolicyName)
 
 	return nil
 }

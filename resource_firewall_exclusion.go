@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/firewallexclusion"
 	"log"
@@ -57,7 +57,7 @@ func resourceFirewallExclusionCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	// Create the API, use it and check for errors.
-	log.Printf(fmt.Sprintf("[DEBUG] member.NewCreate(%s)", moid))
+	log.Printf("[DEBUG] member.NewCreate(%s)", moid)
 	createAPI := firewallexclusion.NewCreate(moid)
 	err := nsxclient.Do(createAPI)
 
@@ -88,7 +88,7 @@ func resourceFirewallExclusionRead(d *schema.ResourceData, meta interface{}) err
 
 	// See if we can find our specifically named resource within the list of
 	// of firewall exclusions
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByMOID(\"%s\")", moid))
+	log.Printf("[DEBUG] api.GetResponse().FilterByMOID(\"%s\")", moid)
 	memberObject, err := getMember(moid, nsxclient)
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func resourceFirewallExclusionDelete(d *schema.ResourceData, meta interface{}) e
 
 	// Gather all the resources that are associated with the specified
 	// moid.
-	log.Printf(fmt.Sprintf("[DEBUG] member.NewGetAll(%s)", moid))
+	log.Printf("[DEBUG] member.NewGetAll(%s)", moid)
 	api := firewallexclusion.NewGetAll()
 	err := nsxclient.Do(api)
 
@@ -125,10 +125,10 @@ func resourceFirewallExclusionDelete(d *schema.ResourceData, meta interface{}) e
 
 	// See if we can find our specifically named resource within the list of
 	// resources associated with the moid.
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByMOID(\"%s\").MOID", moid))
-	memberObject, err := getMember(moid, nsxclient)
+	log.Printf("[DEBUG] api.GetResponse().FilterByMOID(\"%s\").MOID", moid)
+	memberObject, err := getMember(moid, nsxclient) //nolint, maybe a reason to not trigger error
 	id := memberObject.MOID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
@@ -148,7 +148,7 @@ func resourceFirewallExclusionDelete(d *schema.ResourceData, meta interface{}) e
 	// no error.  Notify Terraform of this fact and return successful
 	// completion.
 	d.SetId("")
-	log.Printf(fmt.Sprintf("[DEBUG] id %s deleted.", id))
+	log.Printf("[DEBUG] id %s deleted.", id)
 
 	return nil
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/securitypolicy"
 	"log"
@@ -20,7 +20,7 @@ func getSingleSecurityPolicy(name string, nsxclient *gonsx.NSXClient) (*security
 		return nil, fmt.Errorf("Status code: %d, Response: %s", getAllAPI.StatusCode(), getAllAPI.ResponseObject())
 	}
 
-	log.Printf(fmt.Sprintf("[DEBUG] getAllAPI.GetResponse().FilterByName(\"%s\").ObjectID", name))
+	log.Printf("[DEBUG] getAllAPI.GetResponse().FilterByName(\"%s\").ObjectID", name)
 	securityPolicy := getAllAPI.GetResponse().FilterByName(name)
 
 	return securityPolicy, nil
@@ -96,7 +96,7 @@ func resourceSecurityPolicyCreate(d *schema.ResourceData, meta interface{}) erro
 		securitygroups = make([]string, 0)
 	}
 
-	log.Printf(fmt.Sprintf("[DEBUG] securitypolicy.NewCreate(%s, %s, %s, %s, %v)", name, precedence, description, securitygroups, actions))
+	log.Printf("[DEBUG] securitypolicy.NewCreate(%s, %s, %s, %s, %v)", name, precedence, description, securitygroups, actions)
 	createAPI := securitypolicy.NewCreate(name, precedence, description, securitygroups, actions)
 	err := nsxclient.Do(createAPI)
 
@@ -127,7 +127,7 @@ func resourceSecurityPolicyRead(d *schema.ResourceData, meta interface{}) error 
 		return err
 	}
 	id := securityPolicyObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
@@ -151,7 +151,7 @@ func resourceSecurityPolicyDelete(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 	id := securityPolicyObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
@@ -172,7 +172,7 @@ func resourceSecurityPolicyDelete(d *schema.ResourceData, meta interface{}) erro
 	// no error.  Notify Terraform of this fact and return successful
 	// completion.
 	d.SetId("")
-	log.Printf(fmt.Sprintf("[DEBUG] id %s deleted.", id))
+	log.Printf("[DEBUG] id %s deleted.", id)
 
 	return nil
 }
@@ -197,7 +197,7 @@ func resourceSecurityPolicyUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	id := securityPolicyToChange.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource is not found, notify Terraform of this fact.
 	if id == "" {

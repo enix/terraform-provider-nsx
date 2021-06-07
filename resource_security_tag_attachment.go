@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/securitytag"
 	"log"
@@ -100,12 +100,12 @@ func resourceSecurityTagAttachmentCreate(d *schema.ResourceData, m interface{}) 
 	}
 
 	if createAPI.StatusCode() != 200 {
-		log.Printf(fmt.Sprintf("[DEBUG] Response %v", createAPI.ResponseObject()))
+		log.Printf("[DEBUG] Response %v", createAPI.ResponseObject())
 		return fmt.Errorf("Failed to attach security tag %s", tagIDs)
 	}
 
 	id := name + "/" + moid
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	if len(tagIDs) > 0 && moid != "" {
 		d.SetId(id)
@@ -150,7 +150,7 @@ func resourceSecurityTagAttachmentRead(d *schema.ResourceData, m interface{}) er
 	}
 
 	id := name + "/" + moid
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	if len(tagIDs) > 0 && moid != "" {
 		d.SetId(id)
@@ -188,7 +188,7 @@ func resourceSecurityTagAttachmentDelete(d *schema.ResourceData, m interface{}) 
 
 	// See if we can find our specifically named resource within the list of
 	// resources associated with the scopeid.
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", moid))
+	log.Printf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", moid)
 	attachedTags, err := getAllSecurityTagsAttached(moid, nsxclient)
 
 	if err != nil {
@@ -299,12 +299,12 @@ func resourceSecurityTagAttachmentUpdate(d *schema.ResourceData, m interface{}) 
 		}
 
 		if updateAPI.StatusCode() != 200 {
-			log.Printf(fmt.Sprintf("[DEBUG] Response %v", updateAPI.ResponseObject()))
+			log.Printf("[DEBUG] Response %v", updateAPI.ResponseObject())
 			return fmt.Errorf("Failed to attach security tags")
 		}
 
 		id := name + "/" + moid
-		log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+		log.Printf("[DEBUG] id := %s", id)
 
 		if len(tagIDs) > 0 && moid != "" {
 			d.SetId(id)

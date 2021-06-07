@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/securitytag"
 	"log"
@@ -69,12 +69,12 @@ func resourceSecurityTagCreate(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("desc argument is required")
 	}
 
-	log.Printf(fmt.Sprintf("[DEBUG] securitytag.NewCreate(%s, %s)", name, desc))
+	log.Printf("[DEBUG] securitytag.NewCreate(%s, %s)", name, desc)
 	createAPI := securitytag.NewCreate(name, desc)
 	err := nsxclient.Do(createAPI)
 
 	if err != nil {
-		log.Printf(fmt.Sprintf("[DEBUG] Error while creating security tag: %s", err))
+		log.Printf("[DEBUG] Error while creating security tag: %s", err)
 		return err
 	}
 
@@ -108,7 +108,7 @@ func resourceSecurityTagRead(d *schema.ResourceData, m interface{}) error {
 
 	// Gather all the resources that are associated with the specified
 	// edgeid.
-	log.Printf(fmt.Sprintf("[DEBUG] securitytag.NewGetAll()"))
+	log.Printf("[DEBUG] securitytag.NewGetAll()")
 	api := securitytag.NewGetAll()
 	err := nsxclient.Do(api)
 
@@ -118,7 +118,7 @@ func resourceSecurityTagRead(d *schema.ResourceData, m interface{}) error {
 
 	// See if we can find our specifically named resource within the list of
 	// resources associated with the edgeid.
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name))
+	log.Printf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name)
 	securityTagObject, err := getSingleSecurityTag(name, nsxclient)
 
 	if err != nil {
@@ -126,7 +126,7 @@ func resourceSecurityTagRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	id := securityTagObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] id := %s", id))
+	log.Printf("[DEBUG] id := %s", id)
 
 	// If the resource has been removed manually, notify Terraform of this fact.
 	if id == "" {
@@ -149,7 +149,7 @@ func resourceSecurityTagDelete(d *schema.ResourceData, m interface{}) error {
 
 	// Gather all the resources that are associated with the specified
 	// edgeid.
-	log.Printf(fmt.Sprintf("[DEBUG] securitytag.NewGetAll()"))
+	log.Printf("[DEBUG] securitytag.NewGetAll()")
 	api := securitytag.NewGetAll()
 	err := nsxclient.Do(api)
 
@@ -159,7 +159,7 @@ func resourceSecurityTagDelete(d *schema.ResourceData, m interface{}) error {
 
 	// See if we can find our specifically named resource within the list of
 	// resources associated with the edgeid.
-	log.Printf(fmt.Sprintf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name))
+	log.Printf("[DEBUG] api.GetResponse().FilterByName(\"%s\").ObjectID", name)
 	securityTagObject, err := getSingleSecurityTag(name, nsxclient)
 
 	if err != nil {
@@ -167,7 +167,7 @@ func resourceSecurityTagDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	id := securityTagObject.ObjectID
-	log.Printf(fmt.Sprintf("[DEBUG] security tag id := %s", id))
+	log.Printf("[DEBUG] security tag id := %s", id)
 
 	// If we got here, the resource exists, so we attempt to delete it.
 	deleteAPI := securitytag.NewDelete(id)
@@ -178,7 +178,7 @@ func resourceSecurityTagDelete(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if deleteAPI.StatusCode() != 200 {
-		//log.Printf(fmt.Sprintf("[DEBUG] id %s deleted.", id))
+		//log.Printf("[DEBUG] id %s deleted.", id)
 		return fmt.Errorf("[DEBUG] response object: %s", deleteAPI.ResponseObject())
 	}
 
@@ -186,7 +186,7 @@ func resourceSecurityTagDelete(d *schema.ResourceData, m interface{}) error {
 	// no error.  Notify Terraform of this fact and return successful
 	// completion.
 	d.SetId("")
-	log.Printf(fmt.Sprintf("[DEBUG] id %s deleted.", id))
+	log.Printf("[DEBUG] id %s deleted.", id)
 	return nil
 }
 
@@ -197,7 +197,7 @@ func resourceSecurityTagUpdate(d *schema.ResourceData, m interface{}) error {
 
 	securityTagObject, err := getSingleSecurityTag(oldName.(string), nsxclient)
 	if err != nil {
-		log.Printf(fmt.Sprintf("[DEBUG] Error getting the security tag : %s", err))
+		log.Printf("[DEBUG] Error getting the security tag : %s", err)
 	}
 
 	if d.HasChange("name") {
@@ -218,7 +218,7 @@ func resourceSecurityTagUpdate(d *schema.ResourceData, m interface{}) error {
 		updateAPI := securitytag.NewUpdate(securityTagObject.ObjectID, securityTagObject)
 		err := nsxclient.Do(updateAPI)
 		if err != nil {
-			log.Printf(fmt.Sprintf("[DEBUG] Error updating security tag: %s", err))
+			log.Printf("[DEBUG] Error updating security tag: %s", err)
 		}
 		return resourceSecurityTagRead(d, m)
 	}
