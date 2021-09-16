@@ -56,6 +56,7 @@ func Provider() terraform.ResourceProvider {
 
 		DataSourcesMap: map[string]*schema.Resource{
 			"nsx_security_group": dataSourceSecurityGroup(),
+			"nsx_service":        dataSourceService(),
 		},
 
 		ConfigureFunc: providerConfigure,
