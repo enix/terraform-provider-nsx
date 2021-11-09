@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
+	"log"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/securitypolicy"
-	"log"
 )
 
 func resourceSecurityPolicyRule() *schema.Resource {
@@ -135,11 +136,13 @@ func resourceSecurityPolicyRuleCreate(d *schema.ResourceData, m interface{}) err
 		return err
 	}
 
-	if d.IsNewResource() {
-		existingAction := policyToModify.GetFirewallRuleByName(name)
-		if existingAction.Name != "" {
-			return fmt.Errorf("Firewall rule with same name already exists in this security policy")
-		}
+	if !d.IsNewResource() {
+		policyToModify.RemoveFirewallActionByName(name)
+	}
+
+	existingAction := policyToModify.GetFirewallRuleByName(name)
+	if existingAction.Name != "" {
+		return fmt.Errorf("Firewall rule with same name already exists in this security policy")
 	}
 
 	if direction == "inbound" {
