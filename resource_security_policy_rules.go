@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/mutexkv"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/sky-uk/gonsx"
 	"github.com/sky-uk/gonsx/api/securitypolicy"
 )
+
+var securityPolicyRuleWriteMutexes = mutexkv.NewMutexKV()
 
 func resourceSecurityPolicyRule() *schema.Resource {
 	return &schema.Resource{
@@ -127,6 +130,9 @@ func resourceSecurityPolicyRuleCreate(d *schema.ResourceData, m interface{}) err
 	} else {
 		return fmt.Errorf("serviceids argument is required")
 	}
+
+	securityPolicyRuleWriteMutexes.Lock(securitypolicyname)
+	defer securityPolicyRuleWriteMutexes.Unlock(securitypolicyname)
 
 	log.Print("Getting policy object to modify")
 	policyToModify, err := getSingleSecurityPolicy(securitypolicyname, nsxclient)
