@@ -245,19 +245,19 @@ func resourceSecurityPolicyRuleRead(d *schema.ResourceData, m interface{}) error
 	if len(policyToRead.ActionsByCategory.Actions) == 0 {
 		return nil
 	}
-	action := policyToRead.ActionsByCategory.Actions[0]
-	d.Set("action", action.Action)
-	d.Set("direction", action.Direction)
+
+	d.Set("action", existingAction.Action)
+	d.Set("direction", existingAction.Direction)
 
 	secGroupIds := make([]string, 0)
-	for _, secGroup := range action.SecondarySecurityGroup {
+	for _, secGroup := range existingAction.SecondarySecurityGroup {
 		secGroupIds = append(secGroupIds, secGroup.ObjectID)
 	}
 	d.Set("securitygroupids", secGroupIds)
 
 	serviceIds := make([]string, 0)
-	if action.Applications != nil {
-		for _, application := range action.Applications.Applications {
+	if existingAction.Applications != nil {
+		for _, application := range existingAction.Applications.Applications {
 			serviceIds = append(serviceIds, application.ObjectID)
 		}
 	}
